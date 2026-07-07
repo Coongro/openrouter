@@ -1,0 +1,88 @@
+{
+  "id": "openrouter",
+  "version": "0.1.0",
+  "apiVersion": "2.0",
+  "displayName": "OpenRouter",
+  "description": "Gateway LLM de la plataforma: proxy a OpenRouter con niveles de inteligencia (fast/standard/advanced), ledger de Unidades de trabajo por tenant, cobro por tarea y acreditación idempotente de compras externas. La API key vive en el servidor, nunca en el frontend.",
+  "runtime": "eager",
+  "entry": "./dist/entry.js",
+  "contributes": {
+    "menus": [],
+    "views": [],
+    "repositories": [],
+    "httpEndpoints": [
+      {
+        "id": "chat",
+        "path": "/chat",
+        "method": "POST",
+        "handler": "./dist/endpoints/chat.js",
+        "export": "chat",
+        "auth": "jwt"
+      },
+      {
+        "id": "credits-balance",
+        "path": "/credits/balance",
+        "method": "GET",
+        "handler": "./dist/endpoints/credits-balance.js",
+        "export": "creditsBalance",
+        "auth": "jwt"
+      },
+      {
+        "id": "credits-consume",
+        "path": "/credits/consume",
+        "method": "POST",
+        "handler": "./dist/endpoints/credits-consume.js",
+        "export": "creditsConsume",
+        "auth": "jwt"
+      },
+      {
+        "id": "credits-grant",
+        "path": "/credits/grant",
+        "method": "POST",
+        "handler": "./dist/endpoints/credits-grant.js",
+        "export": "creditsGrant",
+        "auth": "platform"
+      },
+      {
+        "id": "config-models-get",
+        "path": "/config/models",
+        "method": "GET",
+        "handler": "./dist/endpoints/config-models.js",
+        "export": "getModels",
+        "auth": "none"
+      },
+      {
+        "id": "config-models-set",
+        "path": "/config/models",
+        "method": "PUT",
+        "handler": "./dist/endpoints/config-models.js",
+        "export": "setModels",
+        "auth": "none"
+      },
+      {
+        "id": "config-apikey-get",
+        "path": "/config/apikey",
+        "method": "GET",
+        "handler": "./dist/endpoints/config-apikey.js",
+        "export": "getApiKey",
+        "auth": "none"
+      },
+      {
+        "id": "config-apikey-set",
+        "path": "/config/apikey",
+        "method": "PUT",
+        "handler": "./dist/endpoints/config-apikey.js",
+        "export": "setApiKey",
+        "auth": "none"
+      },
+      {
+        "id": "config-test-connection",
+        "path": "/config/test-connection",
+        "method": "POST",
+        "handler": "./dist/endpoints/config-test-connection.js",
+        "export": "testConnection",
+        "auth": "none"
+      }
+    ]
+  }
+}
