@@ -35,7 +35,8 @@
     "version": "npm run sync-version && git add coongro.manifest.json",
     "prepublishOnly": "npm run quality && npm run build",
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "vitest run --passWithNoTests"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -56,6 +57,7 @@
     "prettier": "^3.2.5",
     "typescript": "^5.3.0",
     "drizzle-orm": "^0.38.3",
-    "@types/node": "^20.11.5"
+    "@types/node": "^20.11.5",
+    "vitest": "^1.6.0"
   }
 }

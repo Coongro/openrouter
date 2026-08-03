@@ -21,6 +21,7 @@ import {
   callOpenRouter,
   type ChatMessage,
   type ChatCompletionResult,
+  type StructuredOutputSchema,
 } from '../openrouter-client.js';
 
 import type { JwtContext } from './_context.js';
@@ -34,6 +35,7 @@ interface ChatRequestBody {
   temperature?: number;
   maxTokens?: number;
   json?: boolean;
+  responseSchema?: StructuredOutputSchema;
 }
 
 export async function chat(ctx: JwtContext): Promise<ChatCompletionResult> {
@@ -56,6 +58,7 @@ export async function chat(ctx: JwtContext): Promise<ChatCompletionResult> {
       temperature: body.temperature,
       maxTokens: body.maxTokens,
       json: body.json,
+      responseSchema: body.responseSchema,
     },
     config
   );
