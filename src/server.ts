@@ -6,3 +6,12 @@
  */
 export * from './schema/index.js';
 export * from './credits/ledger.js';
+export { callOpenRouter } from './openrouter-client.js';
+export type {
+  ChatMessage,
+  ChatCompletionOptions,
+  ChatCompletionResult,
+  StructuredOutputSchema,
+} from './openrouter-client.js';
+export { isIntelligenceLevel, loadConfig } from './config.js';
+export type { IntelligenceLevel, OpenRouterConfig } from './config.js';
