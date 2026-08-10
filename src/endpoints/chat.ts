@@ -15,7 +15,7 @@
  * URL final: POST /api/plugins/openrouter/chat
  */
 
-import { isIntelligenceLevel, loadConfig } from '../config.js';
+import { isIntelligenceLevel, loadConfig, modelForLevel } from '../config.js';
 import { recordUsageMetrics } from '../credits/ledger.js';
 import {
   callOpenRouter,
@@ -49,7 +49,7 @@ export async function chat(ctx: JwtContext): Promise<ChatCompletionResult> {
 
   const config = loadConfig();
   const level = isIntelligenceLevel(body.level) ? body.level : undefined;
-  const model = level ? config.models[level] : body.model;
+  const model = level ? modelForLevel(config, level) : body.model;
 
   const result = await callOpenRouter(
     {

@@ -22,8 +22,14 @@ const LEVELS: IntelligenceLevel[] = ['fast', 'standard', 'advanced'];
 export interface ModelsConfigResponse {
   /** false en producción: el mapeo NO es editable, manda el env. */
   dev: boolean;
-  /** Modelo efectivo por nivel (override > env > default). */
+  /**
+   * Modelo efectivo por nivel (override > env). Cadena vacía = SIN configurar:
+   * ya no existe un modelo por defecto que rellene el hueco, así que el vacío es
+   * el estado real y no un dato que falta mostrar.
+   */
   models: Record<IntelligenceLevel, string>;
+  /** Niveles sin modelo: usarlos falla, y con un error que dice qué definir. */
+  unset: IntelligenceLevel[];
   /** Niveles con override activo desde el dev panel. */
   overridden: IntelligenceLevel[];
   /** Costo en unidades por tarea, por nivel (informativo). */
@@ -35,7 +41,11 @@ function snapshot(): ModelsConfigResponse {
   const overrides = getModelOverrides();
   return {
     dev: isDevMode(),
-    models: cfg.models,
+    models: Object.fromEntries(LEVELS.map((l) => [l, cfg.models[l] ?? ''])) as Record<
+      IntelligenceLevel,
+      string
+    >,
+    unset: LEVELS.filter((l) => !cfg.models[l]),
     overridden: LEVELS.filter((l) => overrides[l] !== undefined),
     taskCost: cfg.taskCost,
   };

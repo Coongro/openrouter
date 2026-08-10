@@ -1,7 +1,7 @@
 /** Completion estructurada interna para herramientas de desarrollo. */
 
 import { isDevMode } from '../config-store.js';
-import { isIntelligenceLevel, loadConfig } from '../config.js';
+import { isIntelligenceLevel, loadConfig, modelForLevel } from '../config.js';
 import {
   callOpenRouter,
   type ChatCompletionOptions,
@@ -47,5 +47,5 @@ export async function developerStructured(ctx: {
   const body = (ctx.body ?? {}) as DeveloperStructuredBody;
   const config = loadConfig();
   const level = isIntelligenceLevel(body.level) ? body.level : 'standard';
-  return callOpenRouter({ ...body, model: config.models[level] }, config);
+  return callOpenRouter({ ...body, model: modelForLevel(config, level) }, config);
 }
