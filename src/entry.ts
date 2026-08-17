@@ -20,8 +20,21 @@ export function activate(): void {
     );
     return;
   }
+  const sinModelo = (['fast', 'standard', 'advanced'] as const).filter((l) => !config.models[l]);
+  if (sinModelo.length) {
+    // Se avisa al arrancar y no cuando falla la primera llamada: ya no hay
+    // ningún modelo por defecto que disimule el hueco hasta que alguien pague
+    // por él.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[openrouter] activo, pero sin modelo para: ${sinModelo.join(', ')}. ` +
+        'Definí OPENROUTER_MODEL_FAST / _STANDARD / _ADVANCED (o OPENROUTER_MODEL para todos), ' +
+        'o cargalos desde /dev/copilot.'
+    );
+    return;
+  }
   // eslint-disable-next-line no-console
-  console.log(`[openrouter] activo. Modelo por defecto: ${config.defaultModel}`);
+  console.log(`[openrouter] activo. Modelos: ${JSON.stringify(config.models)}`);
 }
 
 export function deactivate(): void {

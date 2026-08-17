@@ -10,7 +10,7 @@
  */
 
 import { isDevMode } from '../config-store.js';
-import { isIntelligenceLevel, loadConfig } from '../config.js';
+import { isIntelligenceLevel, loadConfig, modelForLevel } from '../config.js';
 import { callOpenRouter } from '../openrouter-client.js';
 
 export interface TestConnectionResult {
@@ -36,14 +36,17 @@ export async function testConnection(ctx: { body: unknown }): Promise<TestConnec
   }
 
   const config = loadConfig();
-  const model = config.models[body.level];
+  const model = config.models[body.level] ?? '';
   const startedAt = Date.now();
 
   try {
+    // `modelForLevel` va DENTRO del try: «probar conexión» tiene que contestar
+    // qué pasó, y un nivel sin modelo es una de las respuestas posibles — no un
+    // 500 que el panel muestra como caída del servidor.
     const result = await callOpenRouter(
       {
         messages: [{ role: 'user', content: 'Respondé únicamente con la palabra: pong' }],
-        model,
+        model: modelForLevel(config, body.level),
         maxTokens: 5,
       },
       config

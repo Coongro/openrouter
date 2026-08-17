@@ -17,10 +17,14 @@ export type IntelligenceLevel = 'fast' | 'standard' | 'advanced';
 export interface OpenRouterConfig {
   /** API key de OpenRouter. `null` si no está configurada todavía. */
   apiKey: string | null;
-  /** Modelo por defecto (compat: requests sin nivel ni modelo explícito). */
-  defaultModel: string;
-  /** Mapeo nivel de inteligencia → slug de modelo de OpenRouter. */
-  models: Record<IntelligenceLevel, string>;
+  /**
+   * Modelo para requests SIN nivel ni modelo explícito (`OPENROUTER_MODEL`).
+   * `null` si nadie lo definió — y no rellena a ningún nivel: un nivel vacío
+   * queda vacío.
+   */
+  defaultModel: string | null;
+  /** Mapeo nivel de inteligencia → slug de modelo. `null` en el nivel que nadie configuró. */
+  models: Record<IntelligenceLevel, string | null>;
   /** Costo en Unidades de trabajo de UNA tarea, por nivel. */
   taskCost: Record<IntelligenceLevel, number>;
   /** Catálogo SKU → unidades que acredita (compras de WordPress). */
@@ -31,13 +35,18 @@ export interface OpenRouterConfig {
   title: string;
 }
 
-const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
-
-const DEFAULT_MODELS: Record<IntelligenceLevel, string> = {
-  fast: 'anthropic/claude-3.5-haiku',
-  standard: DEFAULT_MODEL,
-  advanced: 'anthropic/claude-sonnet-4',
-};
+/**
+ * NO hay modelo por defecto, y es a propósito.
+ *
+ * Antes, el nivel sin configurar caía a un modelo hardcodeado. Eso convertía un
+ * problema de configuración en un problema ajeno: la llamada salía hacia un
+ * modelo que nadie eligió —caro, y a veces ya retirado de OpenRouter—, y la
+ * respuesta era `404 No endpoints found`, que se lee igual que una credencial
+ * vencida. Se llegaron a generar cinco API keys nuevas persiguiendo eso.
+ *
+ * Sin modelo configurado no se llama a nadie: se explica qué falta definir. El
+ * modelo lo elige quien paga la cuenta, por env var o desde `/dev/copilot`.
+ */
 
 /** Costo por tarea: los niveles altos consumen más unidades. */
 const DEFAULT_TASK_COST: Record<IntelligenceLevel, number> = {
@@ -84,9 +93,29 @@ function taskCostFromEnv(raw: string | undefined, fallback: number): number {
   return n > 0 ? n : fallback;
 }
 
+/**
+ * El modelo de un nivel, o un error que dice qué definir.
+ *
+ * Va acá y no en el cliente HTTP porque el cliente ya no sabe si el pedido vino
+ * por nivel: si el nivel vacío llegara hasta allá, caería en `defaultModel` y
+ * volveríamos a llamar a un modelo que nadie eligió para ese nivel.
+ */
+export function modelForLevel(config: OpenRouterConfig, level: IntelligenceLevel): string {
+  const model = config.models[level];
+  if (model) return model;
+  const variable = `OPENROUTER_MODEL_${level.toUpperCase()}`;
+  const error = new Error(
+    `El nivel «${level}» no tiene modelo configurado. Definí ${variable} y reiniciá la API, ` +
+      'o cargalo desde /dev/copilot (en desarrollo, sin reiniciar). ' +
+      'No hay modelo por defecto a propósito: uno heredado se llama solo y se paga solo.'
+  ) as Error & { statusCode?: number };
+  error.statusCode = 400;
+  throw error;
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): OpenRouterConfig {
   const envApiKey = env.OPENROUTER_API_KEY?.trim();
-  const defaultModel = env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
+  const defaultModel = env.OPENROUTER_MODEL?.trim() || null;
   // Override editable desde el dev panel (solo dev) — pisa a las env vars.
   const ov = getModelOverrides();
   // La API key también es pisable desde el dev panel (solo dev); si no, env.
@@ -94,10 +123,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): OpenRouterConf
   return {
     apiKey,
     defaultModel,
+    // Cada nivel usa SOLO lo suyo: su override de dev o su env var. Ni siquiera
+    // cae a `OPENROUTER_MODEL` — un nivel que hereda el modelo de otro lado
+    // vuelve a ser un fallback, y entonces vaciar un nivel no lo apaga: lo manda
+    // en silencio a un modelo que quizá ya no existe (fue exactamente lo que
+    // pasó con `owl-alpha` heredado desde OPENROUTER_MODEL).
     models: {
-      fast: ov.fast || env.OPENROUTER_MODEL_FAST?.trim() || DEFAULT_MODELS.fast,
-      standard: ov.standard || env.OPENROUTER_MODEL_STANDARD?.trim() || defaultModel,
-      advanced: ov.advanced || env.OPENROUTER_MODEL_ADVANCED?.trim() || DEFAULT_MODELS.advanced,
+      fast: ov.fast || env.OPENROUTER_MODEL_FAST?.trim() || null,
+      standard: ov.standard || env.OPENROUTER_MODEL_STANDARD?.trim() || null,
+      advanced: ov.advanced || env.OPENROUTER_MODEL_ADVANCED?.trim() || null,
     },
     taskCost: {
       fast: taskCostFromEnv(env.COPILOT_TASK_COST_FAST, DEFAULT_TASK_COST.fast),

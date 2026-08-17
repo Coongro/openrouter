@@ -94,4 +94,35 @@ describe('callOpenRouter structured output', () => {
     ).rejects.toThrow('responseSchema.name');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  /**
+   * Sin modelo no se llama a nadie. Antes había un default hardcodeado, así que
+   * un nivel sin configurar salía igual hacia un modelo que nadie eligió; si ese
+   * modelo ya no existía, el 404 de OpenRouter se leía como credencial vencida y
+   * mandaba a rotar la API key, que no tenía nada que ver.
+   */
+  it('sin modelo configurado no llama al proveedor y dice qué definir', async () => {
+    const fetchMock = okFetch();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      callOpenRouter(
+        { messages: [{ role: 'user', content: 'hola' }] },
+        { ...config, defaultModel: null }
+      )
+    ).rejects.toThrow(/OPENROUTER_MODEL_STANDARD/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('el modelo del nivel manda aunque no haya default', async () => {
+    const fetchMock = okFetch('{"ok":true}');
+    vi.stubGlobal('fetch', fetchMock);
+
+    await callOpenRouter(
+      { messages: [{ role: 'user', content: 'hola' }], model: config.models.fast ?? undefined },
+      { ...config, defaultModel: null }
+    );
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { model: string };
+    expect(body.model).toBe('test/fast');
+  });
 });

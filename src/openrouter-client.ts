@@ -83,7 +83,19 @@ export async function callOpenRouter(
     throw new Error('Se requiere `messages` (array no vacío).');
   }
 
+  // Sin modelo no se llama a nadie. Antes acá había un default hardcodeado y el
+  // pedido salía igual hacia un modelo que nadie eligió; cuando ese modelo ya no
+  // existía, OpenRouter contestaba 404 y el mensaje mandaba a revisar la API key,
+  // que no tenía nada que ver.
   const model = options.model?.trim() || config.defaultModel;
+  if (!model) {
+    throw new Error(
+      'No hay modelo configurado para esta llamada. Definí OPENROUTER_MODEL_FAST, ' +
+        'OPENROUTER_MODEL_STANDARD u OPENROUTER_MODEL_ADVANCED según el nivel (o ' +
+        'OPENROUTER_MODEL para todos) y reiniciá la API. En desarrollo también se ' +
+        'carga desde /dev/copilot, sin reiniciar.'
+    );
+  }
   const payload: Record<string, unknown> = {
     model,
     messages: options.messages,
